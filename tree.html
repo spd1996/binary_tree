@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Binary Tree Inorder Traversal Visualizer</title>
+<style>
+  body {
+    background: linear-gradient(135deg, #1e1e2e 0%, #2a2a4e 100%);
+    color: #e0e0e0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+    overflow-x: auto;
+  }
+  .container {
+    display: grid;
+    grid-template-columns: minmax(500px, 1fr) minmax(300px, 1fr);
+    gap: 20px;
+    max-width: 1200px;
+    width: 100%;
+    background: #24243e;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  }
+  h1 {
+    color: #00e676;
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 2rem;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    grid-column: 1 / -1;
+  }
+  h3 {
+    color: #bb86fc;
+    margin: 10px 0;
+  }
+  p {
+    line-height: 1.6;
+    font-size: 0.95rem;
+  }
+  .tree-container {
+    position: relative;
+    width: 100%;
+    height: 350px;
+    margin: 10px 0;
+    border: 2px solid #444;
+    border-radius: 8px;
+    background: #1a1a2e;
+    padding: 10px;
+    overflow: visible;
+  }
+  .node {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #4caf50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transform: translate(-50%, -50%);
+  }
+  .node.active { background: #fbc02d; color: #000; }
+  .node:hover::after {
+    content: attr(data-label);
+    position: absolute;
+    top: -30px;
+    background: #333;
+    color: #fff;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    z-index: 10;
+  }
+  .edge {
+    position: absolute;
+    border: 1px solid #e0e0e0;
+    transform-origin: 0 0;
+  }
+  .result {
+    display: flex;
+    gap: 5px;
+    margin-top: 10px;
+    padding: 10px;
+    background: #1a1a2e;
+    border-radius: 8px;
+    flex-wrap: wrap;
+  }
+  .result-cell {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #1e88e5;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: bold;
+  }
+  .pseudocode {
+    background: #1e1e2e;
+    padding: 15px;
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    line-height: 1.6;
+    font-size: 0.9rem;
+    border-left: 4px solid #00e676;
+    max-height: 200px;
+    overflow-y: auto;
+    border-right: 2px solid #444; /* Subtle boundary */
+    box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.2);
+  }
+  .highlight {
+    background: #fbc02d;
+    color: #000;
+    display: inline-block;
+    width: 100%;
+    padding: 2px 0;
+  }
+  .controls {
+    display: flex;
+    gap: 10px;
+    margin: 10px 0;
+  }
+  button {
+    background: #00e676;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: #121212;
+    font-weight: bold;
+    transition: transform 0.2s, background 0.2s;
+  }
+  button:hover {
+    transform: scale(1.05);
+    background: #00c853;
+  }
+  .status {
+    font-size: 0.9rem;
+    color: #bb86fc;
+    margin: 10px 0;
+    text-align: center;
+  }
+  .popup-container {
+    position: fixed;
+    top: 100px;
+    right: 20px;
+    max-height: calc(100vh - 120px);
+    width: 250px;
+    overflow-y: auto;
+    z-index: 1000;
+    padding: 10px;
+  }
+  .popup {
+    background: #333;
+    border: 2px solid #00e676;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    animation: slideIn 0.3s ease;
+  }
+  .popup.closing {
+    animation: slideOut 0.3s ease forwards;
+  }
+  .popup h4 {
+    margin: 0;
+    color: #00e676;
+    font-size: 0.9rem;
+  }
+  @keyframes slideIn {
+    from { transform: translateX(20px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  @keyframes slideOut {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(20px); opacity: 0; }
+  }
+  .code-block {
+    background: #1e1e2e;
+    padding: 15px;
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    border-left: 4px solid #bb86fc;
+    margin-top: 20px;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+  }
+  .code-block.show {
+    max-height: 400px;
+    overflow-y: auto;
+  }
+  .code-toggle {
+    cursor: pointer;
+    color: #bb86fc;
+    text-align: center;
+    margin: 10px 0;
+    font-size: 0.9rem;
+  }
+  .code-toggle:hover {
+    text-decoration: underline;
+  }
+  .left-column {
+  max-width: 500px;
+  }
+  .right-column {
+   max-width: 500px;
+  }
+  @media (max-width: 900px) {
+    .container {
+      grid-template-columns: 1fr;
+    }
+    .tree-container {
+      height: 400px;
+      width: 80%;
+    }
+    .node {
+      width: 30px;
+      height: 30px;
+      font-size: 0.8rem;
+    }
+    .pseudocode {
+      font-size: 0.85rem;
+      border-right: none;
+    }
+    .popup-container {
+      width: 200px;
+      right: 10px;
+    }
+  }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="container">
+  <h1>🌳 Binary Tree Inorder Traversal Visualizer</h1>
+
+  <div class="left-column">
+    <h3>Problem Statement</h3>
+    <p>
+      Given the root of a binary tree, return the inorder traversal of its nodes' values.
+      Inorder traversal visits nodes in the order: left subtree, root, right subtree.
+    </p>
+    <div class="status" id="status">Step: 0 | Nodes Visited: 0</div>
+    <div class="tree-container" id="tree"></div>
+    <div class="result" id="result"></div>
+  </div>
+
+  <div class="right-column">
+    <h3>Pseudocode</h3>
+    <div class="pseudocode" id="pseudocode">
+      <pre>
+inorder(node):
+    if node is null: return
+    inorder(node.left)
+    visit node
+    inorder(node.right)
+    return
+      </pre>
+    </div>
+    <div class="controls">
+      <button onclick="nextStep()">➡️ Next Step</button>
+      <button onclick="reset()">🔄 Reset</button>
+    </div>
+    <div class="code-toggle" onclick="toggleCode()">Show/Hide Python Code</div>
+    <div class="code-block" id="code-block">
+      <pre>
+class Solution:
+    def inorderTraversal(self, root: TreeNode) -> List[int]:
+        result = []
+        def inorder(node):
+            if not node:
+                return
+            inorder(node.left)
+            result.append(node.val)
+            inorder(node.right)
+        inorder(root)
+        return result
+      </pre>
+    </div>
+  </div>
+</div>
+
+<div class="popup-container" id="popup-container"></div>
+
+<script>
+let step = 0;
+let nodesVisited = 0;
+let result = [];
+
+const treeData = {
+  val: 1,
+  left: {
+    val: 2,
+    left: { val: 4, left: { val: 8, left: null, right: null }, right: { val: 9, left: null, right: null } },
+    right: { val: 5, left: null, right: null }
+  },
+  right: {
+    val: 3,
+    left: { val: 6, left: { val: 10, left: null, right: null }, right: null },
+    right: { val: 7, left: null, right: null }
+  }
+};
+
+const treeEl = document.getElementById("tree");
+const resultEl = document.getElementById("result");
+const popupContainer = document.getElementById("popup-container");
+const statusEl = document.getElementById("status");
+const codeBlock = document.getElementById("code-block");
+let nodes = [];
+let edges = [];
+
+function initializeTree() {
+  treeEl.innerHTML = "";
+  resultEl.innerHTML = "";
+  nodes = [];
+  edges = [];
+  result = [];
+  nodesVisited = 0;
+
+  // Define node positions (adjusted for 10 nodes)
+  const positions = [
+    { val: 1, x: 250, y: 20, id: "1" },   // Root
+    { val: 2, x: 150, y: 100, id: "2" },  // Left subtree
+    { val: 3, x: 350, y: 100, id: "3" },  // Right subtree
+    { val: 4, x: 100, y: 180, id: "4" },
+    { val: 5, x: 200, y: 180, id: "5" },
+    { val: 6, x: 300, y: 180, id: "6" },
+    { val: 7, x: 400, y: 180, id: "7" },
+    { val: 8, x: 50, y: 260, id: "8" },
+    { val: 9, x: 150, y: 260, id: "9" },
+    { val: 10, x: 250, y: 260, id: "10" }
+  ];
+
+  // Create nodes
+  positions.forEach(node => {
+    const el = document.createElement("div");
+    el.classList.add("node");
+    el.style.left = `${node.x}px`;
+    el.style.top = `${node.y}px`;
+    el.textContent = node.val;
+    el.setAttribute("data-label", `Node ${node.val}`);
+    nodes.push({ id: node.id, val: node.val, x: node.x, y: node.y, el });
+    treeEl.appendChild(el);
+  });
+
+  // Define and create edges dynamically
+  const edgeData = [
+    { from: "1", to: "2" }, // 1 -> 2
+    { from: "1", to: "3" }, // 1 -> 3
+    { from: "2", to: "4" }, // 2 -> 4
+    { from: "2", to: "5" }, // 2 -> 5
+    { from: "3", to: "6" }, // 3 -> 6
+    { from: "3", to: "7" }, // 3 -> 7
+    { from: "4", to: "8" }, // 4 -> 8
+    { from: "4", to: "9" }, // 4 -> 9
+    { from: "6", to: "10" } // 6 -> 10
+  ];
+
+  edgeData.forEach(edge => {
+    const fromNode = nodes.find(n => n.id === edge.from);
+    const toNode = nodes.find(n => n.id === edge.to);
+    if (fromNode && toNode) {
+      const el = document.createElement("div");
+      el.classList.add("edge");
+      const x1 = fromNode.x;
+      const y1 = fromNode.y;
+      const x2 = toNode.x;
+      const y2 = toNode.y;
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      const length = Math.sqrt(dx * dx + dy * dy);
+      const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+      el.style.width = `${length}px`;
+      el.style.transform = `rotate(${angle}deg)`;
+      el.style.left = `${x1}px`;
+      el.style.top = `${y1}px`;
+      edges.push(el);
+      treeEl.appendChild(el);
+    }
+  });
+}
+
+function getNode(val) {
+  return nodes.find(n => n.val === val);
+}
+
+const pseudocodeLines = document.querySelector("#pseudocode pre").innerHTML.split("\n").filter(line => line.trim());
+console.log("Pseudocode lines:", pseudocodeLines);
+function highlightLine(lineIdx) {
+  const pre = document.querySelector("#pseudocode pre");
+  if (lineIdx >= 0 && lineIdx < pseudocodeLines.length) {
+    console.log("Highlighting line:", lineIdx, pseudocodeLines[lineIdx]);
+    pre.innerHTML = pseudocodeLines.map((line, i) => {
+      return i === lineIdx ? `<span class='highlight'>${line}</span>` : line;
+    }).join("\n");
+  } else {
+    console.log("Skipping highlight, invalid lineIdx:", lineIdx);
+    pre.innerHTML = pseudocodeLines.join("\n");
+  }
+}
+
+let popupOffset = 0;
+let popupStack = [];
+
+function pushPopup(message) {
+  const popup = document.createElement("div");
+  popup.classList.add("popup");
+  popup.innerHTML = `<h4>${message}</h4>`;
+  popupContainer.appendChild(popup);
+  popupOffset += 50;
+  const containerRect = popupContainer.getBoundingClientRect();
+  const maxHeight = window.innerHeight - containerRect.top - 20;
+  popupContainer.style.maxHeight = `${maxHeight}px`;
+  return popup;
+}
+
+function popPopup(popup) {
+  try {
+    if (popup && popup.parentNode) {
+      popup.classList.add("closing");
+      setTimeout(() => {
+        if (popup.parentNode) {
+          popup.parentNode.removeChild(popup);
+          popupOffset = Math.max(0, popupOffset - 50);
+          const containerRect = popupContainer.getBoundingClientRect();
+          const maxHeight = window.innerHeight - containerRect.top - 20;
+          popupContainer.style.maxHeight = `${maxHeight}px`;
+        }
+      }, 300); // Match slideOut animation duration
+    }
+  } catch (e) {
+    console.error("Error in popPopup:", e);
+  }
+}
+
+let steps = [];
+
+function recordInorder(node, nodeId) {
+  if (!node) {
+    steps.push({
+      line: 1,
+      action: () => {
+        console.log(`Node ${nodeId} is null, returning`);
+        const popup = pushPopup(`inorder(node=${nodeId || "null"})`);
+        popupStack.push(popup);
+        setTimeout(() => popPopup(popupStack.pop()), 300);
+      }
+    });
+    return;
+  }
+
+  steps.push({
+    line: 0,
+    action: () => {
+      console.log(`Entering node ${node.val}`);
+      const nodeEl = getNode(node.val);
+      if (nodeEl) nodeEl.el.classList.add("active");
+      const popup = pushPopup(`inorder(node=${node.val})`);
+      popupStack.push(popup);
+    }
+  });
+
+  // Left subtree
+  recordInorder(node.left, node.left ? node.left.val : null);
+
+  // Visit node
+  steps.push({
+    line: 2,
+    action: () => {
+      result.push(node.val);
+      nodesVisited++;
+      const cell = document.createElement("div");
+      cell.classList.add("result-cell");
+      cell.textContent = node.val;
+      resultEl.appendChild(cell);
+      console.log(`Visited node ${node.val}, result: [${result}]`);
+      statusEl.textContent = `Step: ${step + 1} | Nodes Visited: ${nodesVisited}`;
+    }
+  });
+
+  // Right subtree
+  recordInorder(node.right, node.right ? node.right.val : null);
+
+  // Explicit return step to pop the call stack
+  steps.push({
+    line: 3,
+    action: () => {
+      const nodeEl = getNode(node.val);
+      if (nodeEl) nodeEl.el.classList.remove("active");
+      console.log(`Finished node ${node.val}, popping call stack`);
+      popPopup(popupStack.pop());
+      statusEl.textContent = `Step: ${step + 1} | Nodes Visited: ${nodesVisited}`;
+    }
+  });
+}
+
+function generateSteps() {
+  steps = [];
+  recordInorder(treeData, treeData.val);
+  console.log("Steps generated:", steps.length);
+}
+
+initializeTree();
+generateSteps();
+
+function nextStep() {
+  console.log("Next step:", step, "of", steps.length);
+  if (step >= steps.length) {
+    alert("Done! Use Reset to start over.");
+    return;
+  }
+  try {
+    if (steps[step].line >= 0) highlightLine(steps[step].line);
+    steps[step].action();
+  } catch (e) {
+    console.error("Error in step", step, ":", e);
+  }
+  step++;
+}
+
+function reset() {
+  step = 0;
+  nodesVisited = 0;
+  popupOffset = 0;
+  popupStack.forEach(popup => popPopup(popup));
+  popupStack = [];
+  steps = [];
+  initializeTree();
+  highlightLine(-1);
+  popupContainer.innerHTML = "";
+  popupContainer.style.maxHeight = "";
+  statusEl.textContent = `Step: 0 | Nodes Visited: 0`;
+  codeBlock.classList.remove("show");
+  generateSteps();
+  console.log("Reset complete, steps:", steps.length);
+}
+
+function toggleCode() {
+  codeBlock.classList.toggle("show");
+}
+</script>
+
+</body>
+</html>
